@@ -697,13 +697,13 @@ public class Core extends JavaPlugin implements Listener {
 		}
 		
 		switch(e.getCurrentItem().getType()) {
-		case PORK:
+		case SKULL_ITEM:
 			if(zombifypig.contains(p.getName())) {
 				zombifypig.remove(p.getName());
 			}
 			if(gadgetenabled.contains(p.getName())) {
 				gadgetenabled.remove(p.getName());
-				ItemStack zombiepig = new ItemStack(Material.SKULL_ITEM, 1, (short) 2);
+				ItemStack zombiepig = new ItemStack(Material.EGG);
 				ItemMeta zombiepigMeta = zombiepig.getItemMeta();
 				zombiepigMeta.setDisplayName("§eZombified Pig Pokeball");
 				zombiepig.setItemMeta(zombiepigMeta);
@@ -713,7 +713,7 @@ public class Core extends JavaPlugin implements Listener {
 			} else {
 				gadgetenabled.add(p.getName());
 				zombifypig.add(p.getName());
-				ItemStack zombiepig = new ItemStack(Material.SKULL_ITEM, 1, (short) 2);
+				ItemStack zombiepig = new ItemStack(Material.EGG);
 				ItemMeta zombiepigMeta = zombiepig.getItemMeta();
 				zombiepigMeta.setDisplayName("§eZombified Pig Pokeball");
 				zombiepig.setItemMeta(zombiepigMeta);
