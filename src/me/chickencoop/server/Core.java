@@ -35,6 +35,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -43,6 +44,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Core extends JavaPlugin implements Listener {
 	
+	ArrayList<String> lightning = new ArrayList<String>();
+	ArrayList<String> afk = new ArrayList<String>();
 	ArrayList<String> fly = new ArrayList<String>();
 	ArrayList<String> pig = new ArrayList<String>();
 	ArrayList<String> zombifypig = new ArrayList<String>();
@@ -55,6 +58,22 @@ public class Core extends JavaPlugin implements Listener {
 	@SuppressWarnings("deprecation")
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		Player p = (Player) sender;
+		
+		if(cmd.getName().equalsIgnoreCase("afk")) {
+			if(afk.contains(p.getName())) {
+				afk.remove(p.getName());
+				Bukkit.broadcastMessage("§e" + p.getName() + " §7is no longer busy!");
+				for(Player pl : Bukkit.getServer().getOnlinePlayers()) {
+					pl.showPlayer(p);
+				}
+			} else {
+				afk.add(p.getName());
+				Bukkit.broadcastMessage("§e" + p.getName() + " §7is now busy!");
+				for(Player pl : Bukkit.getServer().getOnlinePlayers()) {
+					pl.hidePlayer(p);
+				}
+			}
+		}
 		
 		if(cmd.getName().equalsIgnoreCase("fly")) {
 			if(!p.hasPermission("chickencoop.fly")) {
@@ -286,11 +305,42 @@ public class Core extends JavaPlugin implements Listener {
 	}
 	
 	@EventHandler
+	public void onToggleFlight(PlayerToggleFlightEvent e) {
+		Player p = e.getPlayer();
+		if (p.getGameMode() == GameMode.CREATIVE)
+			return;
+		e.setCancelled(true);
+		p.setAllowFlight(false);
+		p.setFlying(false);
+		p.setVelocity(p.getLocation().getDirection().multiply(2.0).setY(1));
+		p.playSound(p.getLocation(), Sound.ENDERDRAGON_WINGS, 1, 1);
+		p.getLocation().getWorld().playEffect(p.getLocation(), Effect.MOBSPAWNER_FLAMES, 100000);
+	}
+
+	@EventHandler
+	public void onMove(PlayerMoveEvent e) {
+		Player p = e.getPlayer();
+		if ((p.getGameMode() != GameMode.CREATIVE)
+				&& (p.getLocation().subtract(0, 1, 0).getBlock().getType() != Material.AIR)
+				&& (!p.isFlying())) {
+			p.setAllowFlight(true);
+		}
+	}	
+	
+	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent e) {
 		Player p = e.getPlayer();
 		if(frozen.contains(p.getName())) {
 			e.setTo(e.getFrom());
 			//To-do /freeze
+		}
+		if(afk.contains(p.getName())) {
+			afk.remove(p.getName());
+			Bukkit.broadcastMessage("§e" + p.getName() + " §7is no longer busy!");
+			for(Player pl : Bukkit.getServer().getOnlinePlayers()) {
+				pl.showPlayer(p);
+			}
+			return;
 		}
 	}
 	
@@ -584,6 +634,7 @@ public class Core extends JavaPlugin implements Listener {
 	
 	@EventHandler
 	public void onInteract(PlayerInteractEvent e) {
+		Player p = e.getPlayer();
 		Action a = e.getAction();
 		ItemStack is = e.getItem();
 		
@@ -594,7 +645,32 @@ public class Core extends JavaPlugin implements Listener {
 			openGadgets(e.getPlayer());
 		if(is.getType() == Material.COMPASS)
 			openServerSelector(e.getPlayer());
-	}
+		if(a == Action.RIGHT_CLICK_BLOCK) {
+			if(is.getType() == Material.DIAMOND_AXE) {
+				if(lightning.contains(p.getName())) {
+					e.setCancelled(true);
+				} else {
+					if(gadgetenabled.contains(p.getName())) {
+						is.addEnchantment(Enchantment.DURABILITY, 1);
+						lightning.add(p.getName());
+						ItemStack thor = new ItemStack(Material.DIAMOND_AXE);
+						ItemMeta thorMeta = thor.getItemMeta();
+						thorMeta.setDisplayName("§eThor's Hammer");
+						thor.setItemMeta(thorMeta);
+						Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+							public void run() {
+								p.getInventory().setItem(1, thor);
+								lightning.remove(p.getName());
+								p.getWorld().strikeLightning(p.getLocation());
+								p.getWorld().createExplosion(p.getLocation(), 5, true);
+							}
+						}, 40);
+					}
+				}
+			}
+			
+		}
+	}			
 	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e) {
@@ -614,6 +690,7 @@ public class Core extends JavaPlugin implements Listener {
 		serverselectorMeta.setDisplayName("§aServer Selector");
 		serverselector.setItemMeta(serverselectorMeta);
 		p.getInventory().setItem(0, serverselector);
+		p.setGameMode(GameMode.SURVIVAL);
 		p.sendMessage("§7§m§l=============================================");
 		p.sendMessage(" ");
 		p.sendMessage("§eWelcome back to the ChickenCoop!");
@@ -633,6 +710,9 @@ public class Core extends JavaPlugin implements Listener {
 	public void onQuit(PlayerQuitEvent e) {
 		Player p = e.getPlayer();
 		vanished.remove(e.getPlayer());
+		afk.remove(p.getName());
+		gadgetenabled.remove(p.getName());
+		p.getInventory().clear();
 		Bukkit.broadcastMessage("§eQuit§7> " + p.getName());
 		
 	}
@@ -673,12 +753,30 @@ public class Core extends JavaPlugin implements Listener {
 		zombiepigMeta.setDisplayName("§eZombified Pig Pokeball");
 		zombiepig.setItemMeta(zombiepigMeta);
 		
+		ItemStack thor = new ItemStack(Material.DIAMOND_AXE);
+		ItemMeta thorMeta = thor.getItemMeta();
+		thorMeta.setDisplayName("§eThor's Hammer");
+		thor.setItemMeta(thorMeta);
+		
+		ItemStack disable = new ItemStack(Material.REDSTONE_BLOCK);
+		ItemMeta disableMeta = disable.getItemMeta();
+		disableMeta.setDisplayName("§c§lUnequip Gadgets");
+		disable.setItemMeta(disableMeta);
+		
+		inv.setItem(4, thor);
 		inv.setItem(11, lightninglauncher);
 		inv.setItem(13, pokeball);
 		inv.setItem(15, snowballgrenade);
 		inv.setItem(22, zombiepig);
+		inv.setItem(26, disable);
 		
 		p.openInventory(inv);
+		p.getInventory().remove(thor);
+		p.getInventory().remove(zombiepig);
+		p.getInventory().remove(pokeball);
+		p.getInventory().remove(snowballgrenade);
+		p.getInventory().remove(lightninglauncher);
+		gadgetenabled.remove(p.getName());
 	}
 	
 	@EventHandler
@@ -697,6 +795,33 @@ public class Core extends JavaPlugin implements Listener {
 		}
 		
 		switch(e.getCurrentItem().getType()) {
+		case REDSTONE_BLOCK:
+			p.sendMessage("§eGadgets: §7All gadgets are now deactivated.");
+			p.closeInventory();
+			break;
+		case DIAMOND_AXE:
+			if(gadgetenabled.contains(p.getName())) {
+				gadgetenabled.remove(p.getName());
+				ItemStack thor = new ItemStack(Material.DIAMOND_AXE);
+				ItemMeta thorMeta = thor.getItemMeta();
+				thorMeta.setDisplayName("§eThor's Hammer");
+				thor.setItemMeta(thorMeta);
+				p.getInventory().remove(thor);
+				p.sendMessage("§eGadgets: §7You have disabled the §eThor's Hammer §7gadget!");
+				p.closeInventory();
+			} else {
+				gadgetenabled.remove(p.getName());
+				gadgetenabled.add(p.getName());
+				p.getInventory().setItem(1, new ItemStack(Material.AIR));
+				ItemStack thor = new ItemStack(Material.DIAMOND_AXE);
+				ItemMeta thorMeta = thor.getItemMeta();
+				thorMeta.setDisplayName("§eThor's Hammer");
+				thor.setItemMeta(thorMeta);
+				p.getInventory().setItem(1, thor);
+				p.sendMessage("§eGadgets: §7You have enabled the §eThor's Hammer §7gadget!");
+				p.closeInventory();
+			}
+			break;
 		case SKULL_ITEM:
 			if(zombifypig.contains(p.getName())) {
 				zombifypig.remove(p.getName());
@@ -711,6 +836,7 @@ public class Core extends JavaPlugin implements Listener {
 				p.sendMessage("§eGadgets: §7You have disabled the §eZombified Pig Pokeball §7gadget!");
 				p.closeInventory();
 			} else {
+				gadgetenabled.remove(p.getName());
 				gadgetenabled.add(p.getName());
 				zombifypig.add(p.getName());
 				ItemStack zombiepig = new ItemStack(Material.EGG);
@@ -736,6 +862,7 @@ public class Core extends JavaPlugin implements Listener {
 				p.sendMessage("§eGadgets: §7You have disabled the §ePig Pokeball §7gadget!");
 				p.closeInventory();
 			} else {
+				gadgetenabled.remove(p.getName());
 				gadgetenabled.add(p.getName());
 				pig.add(p.getName());
 				ItemStack pokeball = new ItemStack(Material.EGG);
@@ -760,6 +887,7 @@ public class Core extends JavaPlugin implements Listener {
 				p.sendMessage("§eGadgets: §7You have disabled the §eLightning Bow §7gadget!");
 				p.closeInventory();
 			} else {
+				gadgetenabled.remove(p.getName());
 				gadgetenabled.add(p.getName());
 				p.getInventory().setItem(1, new ItemStack(Material.AIR));
 				ItemStack lightninglauncher = new ItemStack(Material.BOW);
@@ -784,6 +912,7 @@ public class Core extends JavaPlugin implements Listener {
 				p.sendMessage("§eGadgets: §7You have disabled the §eSnowball Grenade §7gadget!");
 				p.closeInventory();
 			} else {
+				gadgetenabled.remove(p.getName());
 				gadgetenabled.add(p.getName());
 				p.getInventory().setItem(1, new ItemStack(Material.AIR));
 				ItemStack snowballgrenade = new ItemStack(Material.SNOW_BALL);

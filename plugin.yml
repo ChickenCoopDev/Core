@@ -30,3 +30,5 @@ commands:
         description: Clears the global chat. Mod+
     fly:
         description: Allows the sender to fly. Mod+
+    afk:
+        description: Announces that the sender is afk. Member+
