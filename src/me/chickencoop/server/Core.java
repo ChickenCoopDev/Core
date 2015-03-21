@@ -47,6 +47,8 @@ public class Core extends JavaPlugin implements Listener {
 	ArrayList<Player> vanished = new ArrayList<Player>();
 	ArrayList<String> frozen = new ArrayList<String>(); 
 	
+	//ChickenCoop Commands
+	
 	@SuppressWarnings("deprecation")
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		Player p = (Player) sender;
