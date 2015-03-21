@@ -17,6 +17,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Egg;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
@@ -42,7 +43,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Core extends JavaPlugin implements Listener {
 	
-	ArrayList<Player> nofall = new ArrayList<Player>();
+	ArrayList<String> fly = new ArrayList<String>();
+	ArrayList<String> pig = new ArrayList<String>();
+	ArrayList<String> zombifypig = new ArrayList<String>();
 	ArrayList<String> gadgetenabled = new ArrayList<String>();
 	ArrayList<Player> vanished = new ArrayList<Player>();
 	ArrayList<String> frozen = new ArrayList<String>(); 
@@ -52,6 +55,24 @@ public class Core extends JavaPlugin implements Listener {
 	@SuppressWarnings("deprecation")
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		Player p = (Player) sender;
+		
+		if(cmd.getName().equalsIgnoreCase("fly")) {
+			if(!p.hasPermission("chickencoop.fly")) {
+				p.sendMessage("§ePermissions: §7Only players with §eMod+ §7can do that!");
+			} else { 
+				if(!fly.contains(p.getName())) {
+					fly.add(p.getName());
+					p.setAllowFlight(true);
+					p.setFlying(true);
+					p.sendMessage("§eCondition: §7You are now able to fly!");
+				} else {
+					fly.remove(p.getName());
+					p.setAllowFlight(false);
+					p.setFlying(false);
+					p.sendMessage("§eCondition: §7You are no longer able to fly!");
+				}
+			}
+		}
 		
 		if(cmd.getName().equalsIgnoreCase("op")) {
 			if(!p.hasPermission("chickencoop.op")) {
@@ -312,6 +333,170 @@ public class Core extends JavaPlugin implements Listener {
 	}
 	
 	@EventHandler
+	public void onEggLaunch(ProjectileLaunchEvent e) {
+		Projectile proj = e.getEntity();
+		if ((proj instanceof Egg)) {
+			Egg egg = (Egg) proj;
+			LivingEntity shooter = (LivingEntity) egg.getShooter();
+			if((shooter instanceof Player)) {
+				Player p = (Player) shooter;
+				
+				if(gadgetenabled.contains(p.getName())) {
+					egg.getLocation().getWorld().playEffect(egg.getLocation(), Effect.SMOKE, 1000);
+					egg.getLocation().getWorld().playSound(p.getLocation(), Sound.FUSE, 5F, 5F);
+					egg.getLocation().getWorld().playEffect(egg.getLocation(), Effect.MOBSPAWNER_FLAMES, 10);
+				}
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onEggHit(ProjectileHitEvent e) {
+		Projectile proj = e.getEntity();
+		if ((proj instanceof Egg)) {
+			Egg egg = (Egg) proj;
+			LivingEntity shooter = (LivingEntity) egg.getShooter();
+			if ((shooter instanceof Player)) {
+				Player p = (Player) shooter;
+				if(pig.contains(p.getName())) {
+					if(gadgetenabled.contains(p.getName())) {
+						egg.getWorld().spawnEntity(egg.getLocation(), EntityType.PIG);
+						Firework fw = (Firework) egg.getWorld().spawnEntity(egg.getLocation(),
+								EntityType.FIREWORK);
+						FireworkMeta fwmeta = fw.getFireworkMeta();
+						FireworkEffect effect = FireworkEffect.builder().withTrail().withFlicker().withColor(Color.FUCHSIA)
+								.with(FireworkEffect.Type.BALL).build();
+						fwmeta.clearEffects();
+						fwmeta.addEffect(effect);
+						Field f;
+						try {
+							f = fwmeta.getClass().getDeclaredField("power");
+							f.setAccessible(true);
+							try {
+								f.set(fwmeta, -1);
+							} catch (IllegalArgumentException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} catch (IllegalAccessException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+						} catch (NoSuchFieldException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (SecurityException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						
+						fw.setFireworkMeta(fwmeta);
+					}
+				}
+			}
+		}
+	}		
+	
+	@EventHandler
+	public void onZombieEggLaunch(ProjectileLaunchEvent e) {
+		Projectile proj = e.getEntity();
+		if ((proj instanceof Egg)) {
+			Egg egg = (Egg) proj;
+			LivingEntity shooter = (LivingEntity) egg.getShooter();
+			if((shooter instanceof Player)) {
+				Player p = (Player) shooter;
+				
+				if(gadgetenabled.contains(p.getName())) {
+					egg.getLocation().getWorld().playEffect(egg.getLocation(), Effect.SMOKE, 1000);
+					egg.getLocation().getWorld().playSound(p.getLocation(), Sound.FUSE, 5F, 5F);
+					egg.getLocation().getWorld().playEffect(egg.getLocation(), Effect.MOBSPAWNER_FLAMES, 10);
+				}
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onZombieEggHit(ProjectileHitEvent e) {
+		Projectile proj = e.getEntity();
+		if ((proj instanceof Egg)) {
+			Egg egg = (Egg) proj;
+			LivingEntity shooter = (LivingEntity) egg.getShooter();
+			if ((shooter instanceof Player)) {
+				Player p = (Player) shooter;
+				if(zombifypig.contains(p.getName())) {
+					if(gadgetenabled.contains(p.getName())) {
+						egg.getWorld().spawnEntity(egg.getLocation(), EntityType.PIG);
+						
+						Firework fw = (Firework) egg.getWorld().spawnEntity(egg.getLocation(),
+								EntityType.FIREWORK);
+						FireworkMeta fwmeta = fw.getFireworkMeta();
+						FireworkEffect effect = FireworkEffect.builder().withTrail().withFlicker().withColor(Color.FUCHSIA)
+								.with(FireworkEffect.Type.BALL).build();
+						fwmeta.clearEffects();
+						fwmeta.addEffect(effect);
+						Field f;
+						try {
+							f = fwmeta.getClass().getDeclaredField("power");
+							f.setAccessible(true);
+							try {
+								f.set(fwmeta, -1);
+							} catch (IllegalArgumentException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} catch (IllegalAccessException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+						} catch (NoSuchFieldException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (SecurityException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						
+						fw.setFireworkMeta(fwmeta);
+					}
+					Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+						public void run() {
+							egg.getWorld().strikeLightning(egg.getLocation());
+							Firework fw = (Firework) egg.getWorld().spawnEntity(egg.getLocation(),
+									EntityType.FIREWORK);
+							FireworkMeta fwmeta = fw.getFireworkMeta();
+							FireworkEffect effect = FireworkEffect.builder().withTrail().withFlicker().withColor(Color.GREEN).withColor(Color.GRAY)
+									.with(FireworkEffect.Type.BALL).build();
+							fwmeta.clearEffects();
+							fwmeta.addEffect(effect);
+							Field f;
+							try {
+								f = fwmeta.getClass().getDeclaredField("power");
+								f.setAccessible(true);
+								try {
+									f.set(fwmeta, -1);
+								} catch (IllegalArgumentException e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								} catch (IllegalAccessException e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+							} catch (NoSuchFieldException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} catch (SecurityException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							
+							fw.setFireworkMeta(fwmeta);
+							egg.getWorld().spawnEntity(egg.getLocation(), EntityType.PIG_ZOMBIE);
+						}
+					}, 60);
+				}
+			}
+		}
+	}			
+					
+	@EventHandler
 	public void onSnowballLaunch(ProjectileLaunchEvent e) {
 		Projectile proj = e.getEntity();
 		if ((proj instanceof Snowball)) {
@@ -409,8 +594,6 @@ public class Core extends JavaPlugin implements Listener {
 			openGadgets(e.getPlayer());
 		if(is.getType() == Material.COMPASS)
 			openServerSelector(e.getPlayer());
-		if(is.getType() == Material.CHEST)
-			openMobGUI(e.getPlayer());
 	}
 	
 	@EventHandler
@@ -454,18 +637,6 @@ public class Core extends JavaPlugin implements Listener {
 		
 	}
 	
-	private void openMobGUI(Player p) {
-		Inventory mobs = Bukkit.createInventory(null, 27, "§aPokemon Selector");
-		
-		ItemStack creeper = new ItemStack(Material.ANVIL);
-		ItemMeta creeperMeta = creeper.getItemMeta();
-		creeperMeta.setDisplayName("§aCreeper Pokeball");
-		creeper.setItemMeta(creeperMeta);
-		
-		mobs.setItem(12, creeper);
-		p.openInventory(mobs);
-	}
-	
 	private void openServerSelector(Player p) {
 		Inventory serverselector = Bukkit.createInventory(null, 27, "§aServer Selector");
 		
@@ -492,14 +663,20 @@ public class Core extends JavaPlugin implements Listener {
 		snowballgrenadeMeta.setDisplayName("§eSnowball Grenade");
 		snowballgrenade.setItemMeta(snowballgrenadeMeta);
 		
-		ItemStack pokeball = new ItemStack(Material.CHEST);
+		ItemStack pokeball = new ItemStack(Material.EGG);
 		ItemMeta pokeballMeta = pokeball.getItemMeta();
-		pokeballMeta.setDisplayName("§ePokemon Selector");
+		pokeballMeta.setDisplayName("§ePig Pokeball");
 		pokeball.setItemMeta(pokeballMeta);
+		
+		ItemStack zombiepig = new ItemStack(Material.SKULL_ITEM, 1, (short) 2);
+		ItemMeta zombiepigMeta = zombiepig.getItemMeta();
+		zombiepigMeta.setDisplayName("§eZombified Pig Pokeball");
+		zombiepig.setItemMeta(zombiepigMeta);
 		
 		inv.setItem(11, lightninglauncher);
 		inv.setItem(13, pokeball);
 		inv.setItem(15, snowballgrenade);
+		inv.setItem(22, zombiepig);
 		
 		p.openInventory(inv);
 	}
@@ -520,25 +697,53 @@ public class Core extends JavaPlugin implements Listener {
 		}
 		
 		switch(e.getCurrentItem().getType()) {
-		case CHEST:
+		case PORK:
+			if(zombifypig.contains(p.getName())) {
+				zombifypig.remove(p.getName());
+			}
 			if(gadgetenabled.contains(p.getName())) {
 				gadgetenabled.remove(p.getName());
-				ItemStack pokeball = new ItemStack(Material.CHEST);
-				ItemMeta pokeballMeta = pokeball.getItemMeta();
-				pokeballMeta.setDisplayName("§ePokemon Selector");
-				pokeball.setItemMeta(pokeballMeta);
-				p.getInventory().remove(pokeball);
-				p.sendMessage("§eGadgets: §7You have disabled the §ePokemon Selector §7gadget!");
+				ItemStack zombiepig = new ItemStack(Material.SKULL_ITEM, 1, (short) 2);
+				ItemMeta zombiepigMeta = zombiepig.getItemMeta();
+				zombiepigMeta.setDisplayName("§eZombified Pig Pokeball");
+				zombiepig.setItemMeta(zombiepigMeta);
+				p.getInventory().remove(zombiepig);
+				p.sendMessage("§eGadgets: §7You have disabled the §eZombified Pig Pokeball §7gadget!");
 				p.closeInventory();
 			} else {
 				gadgetenabled.add(p.getName());
-				p.getInventory().setItem(1, new ItemStack(Material.AIR));
-				ItemStack pokeball = new ItemStack(Material.CHEST);
+				zombifypig.add(p.getName());
+				ItemStack zombiepig = new ItemStack(Material.SKULL_ITEM, 1, (short) 2);
+				ItemMeta zombiepigMeta = zombiepig.getItemMeta();
+				zombiepigMeta.setDisplayName("§eZombified Pig Pokeball");
+				zombiepig.setItemMeta(zombiepigMeta);
+				p.getInventory().setItem(1, zombiepig);
+				p.sendMessage("§eGadgets: §7You have enabled the §eZombified Pig Pokeball §7gadget!");
+				p.closeInventory();
+			}
+			break;
+		case EGG:
+			if(pig.contains(p.getName())) {
+				pig.remove(p.getName());
+			}
+			if(gadgetenabled.contains(p.getName())) {
+				gadgetenabled.remove(p.getName());
+				ItemStack pokeball = new ItemStack(Material.EGG);
 				ItemMeta pokeballMeta = pokeball.getItemMeta();
-				pokeballMeta.setDisplayName("§ePokemon Selector");
+				pokeballMeta.setDisplayName("§ePig Pokeball");
+				pokeball.setItemMeta(pokeballMeta);
+				p.getInventory().remove(pokeball);
+				p.sendMessage("§eGadgets: §7You have disabled the §ePig Pokeball §7gadget!");
+				p.closeInventory();
+			} else {
+				gadgetenabled.add(p.getName());
+				pig.add(p.getName());
+				ItemStack pokeball = new ItemStack(Material.EGG);
+				ItemMeta pokeballMeta = pokeball.getItemMeta();
+				pokeballMeta.setDisplayName("§ePig Pokeball");
 				pokeball.setItemMeta(pokeballMeta);
 				p.getInventory().setItem(1, pokeball);
-				p.sendMessage("§eGadgets: §7You have enabled the §ePokemon Selector §7gadget!");
+				p.sendMessage("§eGadgets: §7You have enabled the §ePig Pokeball §7gadget!");
 				p.closeInventory();
 			}
 			break;

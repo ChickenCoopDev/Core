@@ -11,20 +11,22 @@ commands:
     re:
         description: Reloads the server. Owner+
     vanish:
-        description: Vanishes the sender.
+        description: Vanishes the sender. Mod+
     addgold:
-        description: Gives 150 gold to the selected player.
+        description: Gives 150 gold to the selected player. Admin+
     removegold:
-        description: Takes 150 gold from the selected player.
+        description: Takes 150 gold from the selected player. Admin+
     gmc:
-        description: Sets your gamemode to creative.
+        description: Sets your gamemode to creative. Admin+
     gms:
-        description: Sets your gamemode to survival.
+        description: Sets your gamemode to survival. Admin+
     gma:
-        description: Sets your gamemode to adventure.
+        description: Sets your gamemode to adventure. Admin+
     op:
-        description: Ops the selected player.
+        description: Ops the selected player. Owner+
     deop:
-        description: Deops the selected player.
+        description: Deops the selected player. Owner+
     cc:
-        description: Clears the global chat.
+        description: Clears the global chat. Mod+
+    fly:
+        description: Allows the sender to fly. Mod+
