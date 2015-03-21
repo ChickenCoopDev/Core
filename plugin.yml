@@ -1,0 +1,30 @@
+name: Core
+main: me.chickencoop.server.Core
+version: 1.0
+commands:
+    freeze:
+        description: Freezes the selected player. Deputy+
+    tp:
+        description: Teleports you to the selected player. Mod+
+    tphere:
+        description: Teleports the selected player to you. Mod+
+    re:
+        description: Reloads the server. Owner+
+    vanish:
+        description: Vanishes the sender.
+    addgold:
+        description: Gives 150 gold to the selected player.
+    removegold:
+        description: Takes 150 gold from the selected player.
+    gmc:
+        description: Sets your gamemode to creative.
+    gms:
+        description: Sets your gamemode to survival.
+    gma:
+        description: Sets your gamemode to adventure.
+    op:
+        description: Ops the selected player.
+    deop:
+        description: Deops the selected player.
+    cc:
+        description: Clears the global chat.
